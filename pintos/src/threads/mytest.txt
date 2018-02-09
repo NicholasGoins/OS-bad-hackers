@@ -1,0 +1,16 @@
+squish-pty bochs -q
+========================================================================
+                       Bochs x86 Emulator 2.4.5
+              Build from CVS snapshot, on April 25, 2010
+========================================================================
+PiLo hda1
+Loading............
+Kernel command line: run my_alarm
+Pintos booting with 4,096 kB RAM...
+383 pages available in kernel pool.
+383 pages available in user pool.
+Calibrating timer...  204,600 loops/s.
+Boot complete.
+Executing 'my_alarm':
+(my_alarm) begin
+current ticks 25
