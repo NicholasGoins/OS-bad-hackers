@@ -19,8 +19,11 @@
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
-struct thread *blocked_q[20];
+struct thread *blocked_q[10] = {0,0,0,0,0,0,0,0,0,0};
 struct thread *dummy_thread;
+#define THREAD_PTR_NULL (struct thread *)0
+
+
 //insert a new thrad in the blocked check for every order chronogiaclly orderded
 //
 // val list_insert(struct thread *list[20],struct thread *t)
@@ -51,6 +54,39 @@ struct thread *dummy_thread;
 //    }
 //
 //}
+
+void my_list_insert (struct thread *list[], struct thread *t) {
+	for (int i = 0; i < 10; i++) {
+		if (list[i] == THREAD_PTR_NULL) {
+			printf("list insert...");
+			list[i] = t;
+			break;
+		}
+	}
+}
+
+void my_list_remove(struct thread * list[], struct thread *t) {
+	for (int i = 0; i < 10; i++) {
+		if (list[i]->tid == t->tid) {
+			printf("list removing....");
+			list[i] = THREAD_PTR_NULL;
+			break;
+		}
+	}
+}
+
+struct thread * my_list_pop (struct thread * list[])
+{
+	static int count = 0;
+	while (count < 10) {
+		if (list[count] != THREAD_PTR_NULL) {
+			return list[count++];
+		}
+		count++;
+	}
+	count = 0;
+	return THREAD_PTR_NULL;
+}
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
@@ -137,25 +173,41 @@ timer_sleep (int64_t ticks)
 // mytimer_sleep
 my_timer_sleep (int64_t ticks)
 {
+	int64_t start = timer_ticks();
+struct thread *curr_thread = thread_current();
+curr_thread->wakeup_ticks = start+ticks;
+curr_thread->waiting_for = TIME_EVENT;
 
+//my_list_insert(blocked_q, curr_thread);
+
+printf("my_timer_sleep(): Current ticks is %llu\n", start);
+//printf("my_timer_sleep(): Thread set to wake at: %llu\n", blocked_queue[0]->wakeup_ticks);
+ASSERT(intr_get_level() == INTR_ON);
+
+enum intr_level old_level = intr_disable();
+printf("inserting into the list");
+my_list_insert(blocked_q, curr_thread);
+thread_block();
+printf("thread blocked, let's goo!!!!");
+intr_set_level(old_level);	
           
-	 printf("inside before block");   
-	  int64_t start = timer_ticks ();
-           struct thread *t = thread_current();
+	 //printf("inside before block");   
+	  //int64_t start = timer_ticks ();
+           //struct thread *t = thread_current();
 
-      	   t->wakeup_ticks = start + ticks; // set up some of the fields
+      	   //t->wakeup_ticks = start + ticks; // set up some of the fields
 
-	   t->waiting_for = TIME_EVENT;  // what the thread is waiting for 
+	   //t->waiting_for = TIME_EVENT;  // what the thread is waiting for 
 
-	  ASSERT (intr_get_level () == INTR_ON);
+	  //ASSERT (intr_get_level () == INTR_ON);
    /// insert into list	   
 	      // check wherher an event has happened  constantly checking whether some event has happened or not
 	       // need to force the thread to give up its time using thread_block()
 	       // need to use some form  blocking
-          blocked_q[0]= t; // holds pionters to all threads 
-          enum intr_level old_level = intr_disable();// disable the interrupt and return the current stae of the interrupt
-	  thread_block();
-	  intr_set_level (old_level);
+          //blocked_q[0]= t; // holds pionters to all threads 
+          //enum intr_level old_level = intr_disable();// disable the interrupt and return the current stae of the interrupt
+	  //thread_block();
+	  //intr_set_level (old_level);
 	  
 }
 //
@@ -226,25 +278,39 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+	// my work
+	struct thread * next_thread;
   ticks++;
   thread_tick ();
+ next_thread = my_list_pop(blocked_q);
  
- if(blocked_q[0]->waiting_for == TIME_EVENT ){
+ if (next_thread != THREAD_PTR_NULL) {
+	 if (next_thread->waiting_for == TIME_EVENT) {
+		if (next_thread->status == THREAD_BLOCKED) {
+			if (ticks >= next_thread->wakeup_ticks) {
+				printf("timer_interrup(): Thread ready to be unblocked\n");
+				thread_unblock(next_thread);
+				my_list_remove(blocked_q, next_thread);
+			}
+		} 
+	 }
+ }
+ //if(blocked_q[0]->waiting_for == TIME_EVENT ){
    
                    
-  if( blocked_q[0] -> status == THREAD_BLOCKED){
-  		if(ticks >= blocked_q[0]->wakeup_ticks){
+ // if( blocked_q[0] -> status == THREAD_BLOCKED){
+ // 		if(ticks >= blocked_q[0]->wakeup_ticks){
   		
-                 printf("timer inteerupt(): Thread ready t be unblocked\n");
-                 thread_unblock(blocked_q[0]);
-		 }
-	}
-  }
+ //                printf("timer inteerupt(): Thread ready t be unblocked\n");
+  //               thread_unblock(blocked_q[0]);
+//		 }
+//	}
+ // }
   
  }
 
