@@ -24,36 +24,7 @@ struct thread *dummy_thread;
 #define THREAD_PTR_NULL (struct thread *)0
 
 
-//insert a new thrad in the blocked check for every order chronogiaclly orderded
-//
-// val list_insert(struct thread *list[20],struct thread *t)
-// {
-//           for(int i=0; i<20; i++)
-//           //     {
-//                    list[i] = t 
-//                    break;
-//           //       if(list[i]==(struct thread *)0)
-//           //       {
-//           //               list[i] = 0;// 0 indicates blank position
-//           //               break;
-//           //         }
-//           //
-//           //    }
-//
-//
-// }
-//val list_remove(struct thread *list[20], struct thread *t){
-//      for(int i=0; i<10; i++)
-//     {  
-//       if(list[i]->tid == t->id)
-//       {
-//               list[i] = (struct thread*)0;// 0 indicates blank position
-//               break;
-//         }
-//
-//    }
-//
-//}
+//insert a new thrad in the blocked check for every order chronogiaclly orderder
 
 void my_list_insert (struct thread *list[], struct thread *t) {
 	for (int i = 0; i < 10; i++) {
@@ -292,6 +263,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
  if (next_thread != THREAD_PTR_NULL) {
 	 if (next_thread->waiting_for == TIME_EVENT) {
 		if (next_thread->status == THREAD_BLOCKED) {
+			printf("Thread to be awaken at %llu\n", next_thread->wakeup_ticks);
 			if (ticks >= next_thread->wakeup_ticks) {
 				printf("timer_interrup(): Thread ready to be unblocked\n");
 				thread_unblock(next_thread);
