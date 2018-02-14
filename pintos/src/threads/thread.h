@@ -91,7 +91,7 @@ struct thread
     
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-   // struct semaphore timer_sema;
+    struct semaphore timerevent_sema;
     struct list_elem timer_elem;
     int64_t wakeup_ticks;
     uint8_t  waiting_for;

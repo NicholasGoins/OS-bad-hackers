@@ -156,10 +156,13 @@ printf("my_timer_sleep(): Current ticks is %llu\n", start);
 ASSERT(intr_get_level() == INTR_ON);
 
 enum intr_level old_level = intr_disable();
-printf("inserting into the list");
+//printf("inserting into the list");
+//list_wakeup_ticks_insert(&blocked_list, &curr_thread->elem);
 my_list_insert(blocked_q, curr_thread);
-thread_block();
-printf("thread blocked, let's goo!!!!");
+//thread_block();
+//printf("thread blocked, let's goo!!!!");
+sema_init(&curr_thread->timeevent_sema, 0);
+sema_down(&curr_thread->timeevent_sema);)
 intr_set_level(old_level);	
           
 	 //printf("inside before block");   
@@ -266,7 +269,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
 			printf("Thread to be awaken at %llu\n", next_thread->wakeup_ticks);
 			if (ticks >= next_thread->wakeup_ticks) {
 				printf("timer_interrup(): Thread ready to be unblocked\n");
-				thread_unblock(next_thread);
+				sema_up(&next_thread->wakeup_ticks);
+				//thread_unblock(next_thread);
 				my_list_remove(blocked_q, next_thread);
 			}
 		} 
