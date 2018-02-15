@@ -15,5 +15,8 @@ uint64_t curr_ticks;
   curr_ticks = timer_ticks();
   my_timer_sleep (100);
   printf("Time elapsed %ul\n",timer_elapsed(curr_ticks));
+  my_timer_sleep (100);
+  printf("Time elapsed %ul\n",timer_elapsed(curr_ticks));
+
   
 }

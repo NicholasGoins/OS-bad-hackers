@@ -6,8 +6,7 @@
 #include "devices/pit.h"
 #include "threads/interrupt.h"
 #include "threads/synch.h"
-#include "threads/thread.h"
-  
+#include "threads/thread.h" 
 /* See [8254] for hardware details of the 8254 timer chip. */
 
 #if TIMER_FREQ < 19
@@ -161,8 +160,8 @@ enum intr_level old_level = intr_disable();
 my_list_insert(blocked_q, curr_thread);
 //thread_block();
 //printf("thread blocked, let's goo!!!!");
-sema_init(&curr_thread->timeevent_sema, 0);
-sema_down(&curr_thread->timeevent_sema);)
+sema_init(&curr_thread->timerevent_sema, 0);
+sema_down(&curr_thread->timerevent_sema);
 intr_set_level(old_level);	
           
 	 //printf("inside before block");   

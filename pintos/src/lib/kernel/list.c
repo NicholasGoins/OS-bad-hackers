@@ -1,5 +1,6 @@
 #include "list.h"
 #include "../debug.h"
+#include "threads/thread.h"
 
 /* Our doubly linked lists have two header elements: the "head"
    just before the first element and the "tail" just after the
@@ -265,7 +266,7 @@ list_pop_front (struct list *list)
 }
 
 void list_priority_insert(struct list * list, struct list_elem *el) {
-	struct list elem *e;
+	struct list_elem *e;
 	const struct thread *existing;
 	const struct thread *new;
 	
