@@ -17,44 +17,18 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
+#define TIME_EVENT 1
+#define THREAD_PTR_NULL (struct thread *)0
+
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
-struct thread *blocked_q[20];
-struct thread *dummy_thread;
-//insert a new thrad in the blocked check for every order chronogiaclly orderded
-//
-// val list_insert(struct thread *list[20],struct thread *t)
-// {
-//           for(int i=0; i<20; i++)
-//           //     {
-//                    list[i] = t 
-//                    break;
-//           //       if(list[i]==(struct thread *)0)
-//           //       {
-//           //               list[i] = 0;// 0 indicates blank position
-//           //               break;
-//           //         }
-//           //
-//           //    }
-//
-//
-// }
-//val list_remove(struct thread *list[20], struct thread *t){
-//      for(int i=0; i<10; i++)
-//     {  
-//       if(list[i]->tid == t->id)
-//       {
-//               list[i] = (struct thread*)0;// 0 indicates blank position
-//               break;
-//         }
-//
-//    }
-//
-//}
+
+struct list blocked_list;
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
+
 static intr_handler_func timer_interrupt;
 static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
@@ -66,12 +40,9 @@ static void real_time_delay (int64_t num, int32_t denom);
 void
 timer_init (void) 
 {
-                    
-	 blocked_q[0] = thread_current();
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
- // blocked_queue[0] = dummy_thread;
- // list_insert(blocked_queue[0],&dummy_thread);
+  list_init(&blocked_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -120,45 +91,35 @@ timer_elapsed (int64_t then)
 }
 
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
-   be turned on.  thread_yield does noe specify what it volun give up*/
+   be turned on. */
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
-
+  
+ int64_t start = timer_ticks ();
+  
+  struct thread *curr_thread = thread_current();
+  curr_thread->wakeup_ticks = start+ticks;
+  //curr_thread->waiting_for = TIME_EVENT;
+  
+  //printf("timer_sleep(): Current ticks is %llu\n", start);
+  //printf("timer_sleep(): Thread <TID:%d> set to wake at: %llu\n", curr_thread->tid, curr_thread->wakeup_ticks );
+  
   ASSERT (intr_get_level () == INTR_ON);
-  // check wherher an event has happened  constantly checking whether some event has happened or not 
-  // need to force the thread to give up its time using thread_block()
-  // need to use some form  blocking 
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  
+  enum intr_level old_level = intr_disable ();
+  
+  list_wakeup_ticks_insert(&blocked_list, &curr_thread->wait_elem);
+  //sema_init(&curr_thread->timeevent_sema, 0);
+  // Enable interrupts before calling sema_down()
+  thread_block();
+  intr_set_level (old_level); 
+  //sema_down(&curr_thread->timeevent_sema);
+  
 }
 
-// mytimer_sleep
-my_timer_sleep (int64_t ticks)
-{
-
-          
-	 printf("inside before block");   
-	  int64_t start = timer_ticks ();
-           struct thread *t = thread_current();
-
-      	   t->wakeup_ticks = start + ticks; // set up some of the fields
-
-	   t->waiting_for = TIME_EVENT;  // what the thread is waiting for 
-
-	  ASSERT (intr_get_level () == INTR_ON);
-   /// insert into list	   
-	      // check wherher an event has happened  constantly checking whether some event has happened or not
-	       // need to force the thread to give up its time using thread_block()
-	       // need to use some form  blocking
-          blocked_q[0]= t; // holds pionters to all threads 
-          enum intr_level old_level = intr_disable();// disable the interrupt and return the current stae of the interrupt
-	  thread_block();
-	  intr_set_level (old_level);
-	  
-}
-//
+/* Sleeps for approximately MS milliseconds.  Interrupts must be
+   turned on. */
 void
 timer_msleep (int64_t ms) 
 {
@@ -231,23 +192,67 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  struct thread * next_thread;
+  struct list_elem * el;
+  
   ticks++;
   thread_tick ();
- 
- if(blocked_q[0]->waiting_for == TIME_EVENT ){
-   
-                   
-  if( blocked_q[0] -> status == THREAD_BLOCKED){
-  		if(ticks >= blocked_q[0]->wakeup_ticks){
-  		
-                 printf("timer inteerupt(): Thread ready t be unblocked\n");
-                 thread_unblock(blocked_q[0]);
-		 }
+  
+  /*
+  static int dumped = 0;
+  if( (ticks >= 1000) && !dumped)
+  {
+      printf("Navigating through the blocked list...\n");
+      
+      while( !list_empty(&blocked_list) ) {
+        el = list_pop_front(&blocked_list);
+      
+        next_thread = list_entry(el, struct thread, wait_elem);
+        printf("timer_interrupt(): Thread <TID:%d> to awake at %llu\n", next_thread->tid, next_thread->wakeup_ticks);
+      }
+  dumped = 1;
+      
+  }
+  */
+  
+  while( !list_empty(&blocked_list) ) {
+      el = list_pop_front(&blocked_list);
+      
+        next_thread = list_entry(el, struct thread, wait_elem);
+        
+        if( ticks < next_thread->wakeup_ticks) {
+           list_push_front(&blocked_list, el);
+           break; 
+        }
+	else {
+            //printf("timer_interrupt(): Thread <TID:%d> ready to be unblocked\n", next_thread->tid);
+            //sema_up(&next_thread->timeevent_sema);
+	    thread_unblock(next_thread);
+            //printf("timer_interrupt(): Thread awaken at %llu\n", ticks);
 	}
   }
   
- }
-
+  
+  /*
+  
+  next_thread = my_list_pop(blocked_queue);
+  if(next_thread != THREAD_PTR_NULL)
+  {
+      if(next_thread->waiting_for == TIME_EVENT) {
+        //printf("Thread waiting for time event\n");
+        if(next_thread->status == THREAD_BLOCKED) {
+            if(ticks >= next_thread->wakeup_ticks) {
+                printf("timer_interrupt(): Thread ready to be unblocked\n");
+                sema_up(&next_thread->timeevent_sema);
+                //thread_unblock(next_thread);
+                my_list_remove(blocked_queue, next_thread);
+            }
+        }
+      }
+  }
+  */
+  
+}
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */

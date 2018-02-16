@@ -4,6 +4,8 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "threads/synch.h"
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -79,6 +81,10 @@ typedef int tid_t;
    only because they are mutually exclusive: only a thread in the
    ready state is on the run queue, whereas only a thread in the
    blocked state is on a semaphore wait list. */
+   
+#ifndef THREAD__
+#define THREAD__
+
 struct thread
   {
     /* Owned by thread.c. */
@@ -87,14 +93,17 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    int old_priority;                   /* Keeps track of the priority assigned to the thread before someone donated priority to it */
     struct list_elem allelem;           /* List element for all threads list. */
-    
+    int64_t wakeup_ticks;
+    int8_t  waiting_for;
+    struct semaphore timeevent_sema;
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-   // struct semaphore timer_sema;
-    struct list_elem timer_elem;
-    int64_t wakeup_ticks;
-    uint8_t  waiting_for;
+    struct list_elem wait_elem; 
+    struct thread *donor;               /* Pointer to the thread which donated the priority to this thread (if there is one) */
+    struct thread *donee;               /* Pointer to the thread to which this thread donated priority to (if there is one) */
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -102,8 +111,10 @@ struct thread
 #endif
 
     /* Owned by thread.c. */
-    unsigned magic;                     /* Detects stack overflow. */
+    unsigned magic;                     /* Detects stack overflow */ 
   };
+  
+#endif
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -135,6 +146,7 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
+void donate_priority(struct thread *donor_thread, struct thread *donee_thread);
 
 int thread_get_nice (void);
 void thread_set_nice (int);

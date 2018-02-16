@@ -98,8 +98,6 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
- // sema_init(&t->timer_sema,0);
-  
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -425,8 +423,6 @@ kernel_thread (thread_func *function, void *aux)
   intr_enable ();       /* The scheduler runs with interrupts off. */
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
-
-
 }
 
 /* Returns the running thread. */
@@ -467,8 +463,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-  
-//  sema_init(&t->timer_sema,0);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
