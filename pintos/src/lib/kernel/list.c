@@ -515,7 +515,6 @@ list_priority_insert(struct list *list, struct list_elem *el)
     
     existing = list_entry(e, struct thread, elem);
     new = list_entry(el, struct thread, elem);
-    
     if( new->priority > existing->priority )
         break;
    }
