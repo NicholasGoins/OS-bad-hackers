@@ -95,17 +95,16 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  
  int64_t start = timer_ticks ();
   
-  struct thread *curr_thread = thread_current();
-  curr_thread->wakeup_ticks = start+ticks;
+  struct thread *current_thread = thread_current();
+  current_thread->wakeup_ticks = start+ticks;
   
   ASSERT (intr_get_level () == INTR_ON);
   
   enum intr_level old_level = intr_disable ();
   
-  list_wakeup_ticks_insert(&blocked_list, &curr_thread->wait_elem);
+  list_wakeup_ticks_insert(&blocked_list, &current_thread->wait_elem);
   thread_block();
   intr_set_level (old_level); 
 }
@@ -184,23 +183,22 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
-  struct thread * next_thread;
-  struct list_elem * el;
-  
   ticks++;
   thread_tick ();
+  struct list_elem * element;
+  struct thread * next_thread_to_run;
   
   while( !list_empty(&blocked_list) ) {
-      el = list_pop_front(&blocked_list);
+      element = list_pop_front(&blocked_list);
       
-        next_thread = list_entry(el, struct thread, wait_elem);
-        
-        if( ticks < next_thread->wakeup_ticks) {
-           list_push_front(&blocked_list, el);
+        next_thread_to_run = list_entry(element, struct thread, wait_elem);
+		
+        if( ticks < next_thread_to_run->wakeup_ticks) {
+           list_push_front(&blocked_list, element);
            break; 
         }
 	else {
-	    thread_unblock(next_thread);
+	    thread_unblock(next_thread_to_run);
 	}
   }
 }
