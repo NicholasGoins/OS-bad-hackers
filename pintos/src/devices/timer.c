@@ -100,22 +100,14 @@ timer_sleep (int64_t ticks)
   
   struct thread *curr_thread = thread_current();
   curr_thread->wakeup_ticks = start+ticks;
-  //curr_thread->waiting_for = TIME_EVENT;
-  
-  //printf("timer_sleep(): Current ticks is %llu\n", start);
-  //printf("timer_sleep(): Thread <TID:%d> set to wake at: %llu\n", curr_thread->tid, curr_thread->wakeup_ticks );
   
   ASSERT (intr_get_level () == INTR_ON);
   
   enum intr_level old_level = intr_disable ();
   
   list_wakeup_ticks_insert(&blocked_list, &curr_thread->wait_elem);
-  //sema_init(&curr_thread->timeevent_sema, 0);
-  // Enable interrupts before calling sema_down()
   thread_block();
   intr_set_level (old_level); 
-  //sema_down(&curr_thread->timeevent_sema);
-  
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -187,7 +179,7 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
@@ -197,23 +189,6 @@ timer_interrupt (struct intr_frame *args UNUSED)
   
   ticks++;
   thread_tick ();
-  
-  /*
-  static int dumped = 0;
-  if( (ticks >= 1000) && !dumped)
-  {
-      printf("Navigating through the blocked list...\n");
-      
-      while( !list_empty(&blocked_list) ) {
-        el = list_pop_front(&blocked_list);
-      
-        next_thread = list_entry(el, struct thread, wait_elem);
-        printf("timer_interrupt(): Thread <TID:%d> to awake at %llu\n", next_thread->tid, next_thread->wakeup_ticks);
-      }
-  dumped = 1;
-      
-  }
-  */
   
   while( !list_empty(&blocked_list) ) {
       el = list_pop_front(&blocked_list);
@@ -225,33 +200,9 @@ timer_interrupt (struct intr_frame *args UNUSED)
            break; 
         }
 	else {
-            //printf("timer_interrupt(): Thread <TID:%d> ready to be unblocked\n", next_thread->tid);
-            //sema_up(&next_thread->timeevent_sema);
 	    thread_unblock(next_thread);
-            //printf("timer_interrupt(): Thread awaken at %llu\n", ticks);
 	}
   }
-  
-  
-  /*
-  
-  next_thread = my_list_pop(blocked_queue);
-  if(next_thread != THREAD_PTR_NULL)
-  {
-      if(next_thread->waiting_for == TIME_EVENT) {
-        //printf("Thread waiting for time event\n");
-        if(next_thread->status == THREAD_BLOCKED) {
-            if(ticks >= next_thread->wakeup_ticks) {
-                printf("timer_interrupt(): Thread ready to be unblocked\n");
-                sema_up(&next_thread->timeevent_sema);
-                //thread_unblock(next_thread);
-                my_list_remove(blocked_queue, next_thread);
-            }
-        }
-      }
-  }
-  */
-  
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
