@@ -86,7 +86,7 @@ list_next (struct list_elem *elem)
   return elem->next;
 }
 
-/* 
+/*
    list_end() is often used in iterating through a list from
    front to back.  See the big comment at the top of list.h forReturns LIST's tail.
 
@@ -101,7 +101,7 @@ list_end (struct list *list)
 /* Returns the LIST's reverse beginning, for iterating through
    LIST in reverse order, from back to front. */
 struct list_elem *
-list_rbegin (struct list *list) 
+list_rbegin (struct list *list)
 {
   ASSERT (list != NULL);
   return list->tail.prev;
@@ -131,7 +131,7 @@ list_prev (struct list_elem *elem)
         }
 */
 struct list_elem *
-list_rend (struct list *list) 
+list_rend (struct list *list)
 {
   ASSERT (list != NULL);
   return &list->head;
@@ -143,13 +143,13 @@ list_rend (struct list *list)
    through a list, e.g.:
 
       e = list_head (&list);
-      while ((e = list_next (e)) != list_end (&list)) 
+      while ((e = list_next (e)) != list_end (&list))
         {
           ...
         }
 */
 struct list_elem *
-list_head (struct list *list) 
+list_head (struct list *list)
 {
   ASSERT (list != NULL);
   return &list->head;
@@ -157,7 +157,7 @@ list_head (struct list *list)
 
 /* Return's LIST's tail. */
 struct list_elem *
-list_tail (struct list *list) 
+list_tail (struct list *list)
 {
   ASSERT (list != NULL);
   return &list->tail;
@@ -315,7 +315,7 @@ list_empty (struct list *list)
 
 /* Swaps the `struct list_elem *'s that A and B point to. */
 static void
-swap (struct list_elem **a, struct list_elem **b) 
+swap (struct list_elem **a, struct list_elem **b)
 {
   struct list_elem *t = *a;
   *a = *b;
@@ -326,7 +326,7 @@ swap (struct list_elem **a, struct list_elem **b)
 void
 list_reverse (struct list *list)
 {
-  if (!list_empty (list)) 
+  if (!list_empty (list))
     {
       struct list_elem *e;
 
@@ -344,7 +344,7 @@ is_sorted (struct list_elem *a, struct list_elem *b,
            list_less_func *less, void *aux)
 {
   if (a != b)
-    while ((a = list_next (a)) != b) 
+    while ((a = list_next (a)) != b)
       if (less (a, list_prev (a), aux))
         return false;
   return true;
@@ -363,8 +363,8 @@ find_end_of_run (struct list_elem *a, struct list_elem *b,
   ASSERT (b != NULL);
   ASSERT (less != NULL);
   ASSERT (a != b);
-  
-  do 
+
+  do
     {
       a = list_next (a);
     }
@@ -390,9 +390,9 @@ inplace_merge (struct list_elem *a0, struct list_elem *a1b0,
   ASSERT (is_sorted (a1b0, b1, less, aux));
 
   while (a0 != a1b0 && a1b0 != b1)
-    if (!less (a1b0, a0, aux)) 
+    if (!less (a1b0, a0, aux))
       a0 = list_next (a0);
-    else 
+    else
       {
         a1b0 = list_next (a1b0);
         list_splice (a0, list_prev (a1b0), a1b0);
@@ -500,28 +500,33 @@ list_insert_ordered (struct list *list, struct list_elem *elem,
       break;
   return list_insert (e, elem);
 }
+// This function takes a list, and an element and then sorts a thread list by comparing the threads priority parameter, the thread with the highest priority is at the front, and the the lowest priority at the back
 
 void
 list_priority_insert(struct list *list, struct list_elem *el)
 {
   struct list_elem *e;
+  // struct for the existing thread
   const struct thread *existing;
+  // struct fir the thread in the list
   const struct thread *new;
 
   ASSERT (list != NULL);
   ASSERT (el != NULL);
-  
+// loops though and compares the current thread element in the list prority to the thread priority bieng inserted
   for (e = list_begin (list); e != list_end (list); e = list_next (e)) {
-    
+
     existing = list_entry(e, struct thread, elem);
     new = list_entry(el, struct thread, elem);
+    // if the priority is greater than the existing priority break
     if( new->priority > existing->priority )
         break;
    }
 
   return list_insert (e, el);
 }
-
+//This function takes in a list, and an element. In this function an existing threads wait_elem paremeter is compared to the list values of wait_elem. the value with the lowest wait elem is put into the fron of the list_tail
+// while the highest is put at the front
 void
 list_wakeup_ticks_insert(struct list *list, struct list_elem *el)
 {
@@ -531,12 +536,12 @@ list_wakeup_ticks_insert(struct list *list, struct list_elem *el)
 
   ASSERT (list != NULL);
   ASSERT (el != NULL);
-  
+// loops though and compares the current thread wakeup_ticks in the list  to the thread lwakeup_ticks bieng inserted
   for (e = list_begin (list); e != list_end (list); e = list_next (e)) {
-    
+
     existing = list_entry(e, struct thread, wait_elem);
     new = list_entry(el, struct thread, wait_elem);
-    
+// if the wakeup_ticks is less than the existing thread wake_up ticks break
     if( new->wakeup_ticks < existing->wakeup_ticks ) {
         break;
     }
@@ -562,7 +567,7 @@ list_unique (struct list *list, struct list *duplicates,
 
   elem = list_begin (list);
   while ((next = list_next (elem)) != list_end (list))
-    if (!less (elem, next, aux) && !less (next, elem, aux)) 
+    if (!less (elem, next, aux) && !less (next, elem, aux))
       {
         list_remove (next);
         if (duplicates != NULL)
@@ -580,13 +585,13 @@ struct list_elem *
 list_max (struct list *list, list_less_func *less, void *aux)
 {
   struct list_elem *max = list_begin (list);
-  if (max != list_end (list)) 
+  if (max != list_end (list))
     {
       struct list_elem *e;
-      
+
       for (e = list_next (max); e != list_end (list); e = list_next (e))
         if (less (max, e, aux))
-          max = e; 
+          max = e;
     }
   return max;
 }
@@ -599,13 +604,13 @@ struct list_elem *
 my_list_max (struct list *list, list_less_func *less, void *aux)
 {
   struct list_elem *max = list_begin (list);
-  if (max != list_end (list)) 
+  if (max != list_end (list))
     {
       struct list_elem *e;
-      
+
       for (e = list_next (max); e != list_end (list); e = list_next (e))
         if (!less (max, e, aux))
-          max = e; 
+          max = e;
     }
   return max;
 }
@@ -618,13 +623,13 @@ struct list_elem *
 list_min (struct list *list, list_less_func *less, void *aux)
 {
   struct list_elem *min = list_begin (list);
-  if (min != list_end (list)) 
+  if (min != list_end (list))
     {
       struct list_elem *e;
-      
+
       for (e = list_next (min); e != list_end (list); e = list_next (e))
         if (less (e, min, aux))
-          min = e; 
+          min = e;
     }
   return min;
 }
