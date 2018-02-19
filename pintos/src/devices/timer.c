@@ -98,14 +98,14 @@ timer_sleep (int64_t ticks)
  int64_t start = timer_ticks ();
   
   struct thread *current_thread = thread_current();
-  current_thread->wakeup_ticks = start+ticks;
+  current_thread->wakeup_ticks = start+ticks; // set the time for wakeup
   
-  ASSERT (intr_get_level () == INTR_ON);
+  ASSERT (intr_get_level () == INTR_ON); 
   
   enum intr_level old_level = intr_disable ();
   
-  list_wakeup_ticks_insert(&blocked_list, &current_thread->wait_elem);
-  thread_block();
+  list_wakeup_ticks_insert(&blocked_list, &current_thread->wait_elem); // Inserts the thread into the list where it is based on its priority
+  thread_block(); // block the thread
   intr_set_level (old_level); 
 }
 
@@ -185,20 +185,20 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
-  struct list_elem * element;
+  struct list_elem * element; // element to keep track of the potential next thread to run.
   struct thread * next_thread_to_run;
   
-  while( !list_empty(&blocked_list) ) {
-      element = list_pop_front(&blocked_list);
+  while( !list_empty(&blocked_list) ) { // if there are no elements in the blocked list, do nothing
+      element = list_pop_front(&blocked_list); // get the first element from the blocked list to determine if it's time to run
       
-        next_thread_to_run = list_entry(element, struct thread, wait_elem);
+        next_thread_to_run = list_entry(element, struct thread, wait_elem); // gets the wait element value for the list to next_thread_to_run
 		
-        if( ticks < next_thread_to_run->wakeup_ticks) {
-           list_push_front(&blocked_list, element);
+        if( ticks < next_thread_to_run->wakeup_ticks) { // checks to see if the thread time has passed and is ready to run
+           list_push_front(&blocked_list, element); // it's not time to run the thread yet, so push the element back onto the list
            break; 
         }
 	else {
-	    thread_unblock(next_thread_to_run);
+	    thread_unblock(next_thread_to_run); // unblock the thread and run it
 	}
   }
 }
