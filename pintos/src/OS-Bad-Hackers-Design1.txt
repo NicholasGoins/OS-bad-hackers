@@ -1,0 +1,114 @@
+ALARM CLOCK
+===========
+---- DATA STRUCTURES ----
+>> A1: Copy here the declaration of each new or changed `struct' or
+
+
+struct list blocked_list;
+	-this is the list of all the threads currently in the blocked queue
+
+struct thread *current_thread = thread_current();
+-	This serves as the pointer to the current thread 
+struct list_elem * element;
+-	The thread being Currently evaluated to see if it is ready to be executed in timer_interrupt
+
+
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+---- ALGORITHMS ----
+>> A2: Briefly describe what happens in a call to your timer_sleep(),
+
+When timer_sleep is called first we get the number of ticks since the system started and the current thread. After this we temporarily disable interrupts then we insert the current thread into the blocked queue until the time to be unblocked has occurred 
+
+
+>> including the effects of the timer interrupt handler.
+>> A3: What steps are taken to minimize the amount of time spent in
+>> the timer interrupt handler?
+
+To minimize the amount of time spent in the interrupt handler we stop the loop early if the time has yet to occur
+
+---- SYNCHRONIZATION ----
+>> A4: How are race conditions avoided when multiple threads call
+>> timer_sleep() simultaneously?
+ 	The way the declaration of the current thread will only let the highest priority modify data, race conditions can’t happen unless multiple threads of the same priority are trying to modify data. 
+
+
+	
+>> A5: How are race conditions avoided when a timer interrupt occurs
+The queue is sorted by priority so when checking to see if a thread is ready to be unblocked the list will handle checking the priority and execution of the next thread to ensure they arent fighting for recourses. 
+
+>> during a call to timer_sleep()?
+---- RATIONALE ----
+>> A6: Why did you choose this design?  In what ways is it superior to
+>> other designs that you considered?
+The major reason we chose a thread_block based implementation over using semaphores is because It was easier to debug and implement because we could easily know where the problem was coming from and we created a my_timer to test various implementations of timer_sleep. We may of done semaphores if we had more time however conceptually thread_block was easier to understand and implement for us. 
+
+     PRIORITY SCHEDULING
+             ===================
+
+---- DATA STRUCTURES ----
+
+>> B1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+Not applicable on the second part. We used already existing data structures to make our implementation of
+priority scheduling possible. 
+
+>> B2: Explain the data structure used to track priority donation.
+
+If the thread can enter then the sema_down is decremented, otherwise it is put on the blocked list. The scheduluer 
+then chooses the highest priority to run next from the ready list.
+After the lock has entered successfully, the lock holder is saved to the current thread.
+
+
+---- ALGORITHMS ----
+
+>> B3: How do you ensure that the highest priority thread waiting for
+>> a lock, semaphore, or condition variable wakes up first?
+
+Threads were held in a list based on FIFO to begin with. We created a new function that inserted threads based on their priority
+into the list. So a thread with a high priority would be placed in the front of the list, and a thread with a low priority would
+be placed in a position based on its priority relative to priorities of other threads. So it is all our unblock functionality would have to do
+is grab the first element in the list which has the highest priority thread to run. If we had done this with priority donation, we would have had to check 
+that the current thread attempting to run has a higher priority than the thread currently running so time could be yielded.
+
+>> B4: Describe the sequence of events when a call to lock_acquire()
+>> causes a priority donation.  How is nested donation handled?
+
+We did not implement priority donation successfully. However, when a thread with higher priority
+would be created, it would need to run immediately. That means the current running thread would yield, give up 
+its lock, and then the newest priority thread would be pushed to the front of the ready queue and then ran. The thread with the highest
+priority would keep track of which thread it was a donor of and so it could run after (My best guess of what would need to be done to finish priority donation)
+
+>> B5: Describe the sequence of events when lock_release() is called
+>> on a lock that a higher-priority thread is waiting for.
+
+When lock_release is called, the highest priority thread would acquire the lock and begin running. Once again, we did
+not successfully implement priority donation. That being said, if we would have done this, the lock is set to null,removed from the locked list and the sema_up function is called. In the sem
+a up function which goes though the threads currently blocked, it wakes up the one with the highest prirority in the list, but if 
+the current threads priority is lower than the one woken up it thread yeld() will be called 
+
+---- SYNCHRONIZATION ----
+
+>> B6: Describe a potential race in thread_set_priority() and explain
+>> how your implementation avoids it.  Can you use a lock to avoid
+>> this race?
+
+In thread set priority, the current thread is retrieved and a new priority is set for it. A race
+condition could occur if the thread switches after the method is called but before the new priority is
+set. I don't see a lock necessarily working inside this function, but maybe you could make sure the function runs 
+without being interrupted, such as disabling interrupts for example. 
+
+---- RATIONALE ----
+
+>> B7: Why did you choose this design?  In what ways is it superior to
+>> another design you considered?
+
+In solving the priority scheduler we decided to create a sort function
+that will sort the ready list of threads by the highest priority. That way anytime a new thread was called
+we would get the thread from a sorted list of threads. We had realized that at first the scheduler was running by a FCFS basis, and 
+realized that we need to change where it was getting the threads. We also created two other functions get, and set priority to assist 
+in sorting our ready list of threads by their priority. We thought this design would be better to use because you already have a sorted list of
+ready threads, and can just call instead of having to always compare the current thread to a thread on the list.
+
