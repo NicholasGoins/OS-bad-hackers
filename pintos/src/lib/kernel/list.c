@@ -508,7 +508,7 @@ list_priority_insert(struct list *list, struct list_elem *el)
   struct list_elem *e;
   // struct for the existing thread
   const struct thread *existing;
-  // struct fir the thread in the list
+  // struct for the thread in the list
   const struct thread *new;
 
   ASSERT (list != NULL);
