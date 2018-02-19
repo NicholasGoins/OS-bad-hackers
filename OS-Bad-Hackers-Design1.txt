@@ -7,6 +7,7 @@ CIS 520 - Programming Project #1
 >> Fill in the names and email addresses of your group members.
 
 Reagan Wood, reaganwood1@ksu.edu
+Nicholas Goins, nag5736@ksu.edu
 ...
 
 ---- PRELIMINARIES ----
